@@ -1,0 +1,28 @@
+%html
+  %head
+    %link{ rel: :stylesheet, href: "/application.css", type: 'text/css' }
+    %script{ src: "/jquery.js", type: 'text/javascript', charset: 'utf-8' }
+    %script{ src: "/underscore.js", type: 'text/javascript', charset: 'utf-8' }
+    %script{ src: "/json2.js", type: 'text/javascript', charset: 'utf-8' }
+    %script{ src: "/backbone.js", type: 'text/javascript', charset: 'utf-8' }
+    %script{ src: "/application.js", type: 'text/javascript', charset: 'utf-8' }
+
+    %title Blackjack
+
+  %body
+    #page_wrap
+      %h1 Blackjack
+
+      #blackjack_wrapper
+
+        #dealer_hand.hand
+          %h3 Dealer Cards
+          .cards
+          .clear
+
+        #player_hand.hand
+          %h3 Player Cards
+          .cards
+          .clear
+
+          %a{ href: '#', id: 'hit' } Hit
