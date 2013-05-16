@@ -1,6 +1,6 @@
 # TODO
-# * Click event should not be in doc ready block
 # * Is this a hack or good? `@$el.find('.card').remove()`
+# * Hand view should be roped into the JS in order to support more than one player hand
 
 # -----------------------------------------------------------------------------
 # Models
@@ -9,7 +9,6 @@ Card = Backbone.Model.extend
   defaults:
     suit: null
     name: null
-    hidden: false
 
   entityForSuit: ->
     "&#{@get('suit')};" # e.g. "&hearts;"
@@ -17,15 +16,14 @@ Card = Backbone.Model.extend
   forTemplate: ->
     template = @toJSON()
     template.entityForSuit = @entityForSuit()
-    template.visiblityClass = @visiblityClass()
     template
 
-  visiblityClass: ->
-    if @get('hidden') then 'flipped' else ''
+  isAce: ->
+    @get('name') == 'A'
 
   value: ->
     switch @get('name')
-      when 'A' then 11
+      when 'A' then 11 # assume 11 but could be 1 depending on hand
       when 'J', 'Q', 'K' then 10
       else parseInt(@get('name'))
 
@@ -37,7 +35,7 @@ Deck = Backbone.Collection.extend
     names = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
     for suit in suits
       for name in names
-        @add({ suit: suit, name: name })
+        @add(suit: suit, name: name)
     @models = @shuffle()
 
   deal: (count = 1) ->
@@ -53,14 +51,28 @@ Hand = Backbone.Collection.extend
 
   hit: (card) ->
     @add(card)
+    console.log @value()
 
+  aces: ->
+    @cards().filter (card) -> card.isAce()
+
+  value: ->
+    values = @cards().map (card) -> card.value()
+    totalWitAcesAsEleven = _.reduce(values, ((memo, num) -> memo + num), 0)
+    _.reduce @aces(), ((memo, num) -> memo - 10 if memo > 21), totalWitAcesAsEleven
+
+  bust: ->
+    @value() > 21
+
+  blackjack: ->
+    @value() == 21
 
 # -----------------------------------------------------------------------------
 # Views
 # -----------------------------------------------------------------------------
 CardView = Backbone.View.extend
   template: """
-    <div class="card <%= suit %> <%= visiblityClass %>">
+    <div class="card <%= suit %>">
       <div class=top_left>
         <div class=name><%= name %></div>
         <div class=suit><%= entityForSuit %></div>
@@ -76,49 +88,70 @@ CardView = Backbone.View.extend
     @$el.append _.template(@template, @model.forTemplate())
     return this
 
+
 HandView = Backbone.View.extend
 
   initialize: ->
-    @setElement("##{@type()}_hand .cards") # e.g. "#player_hand .cards"
     @listenTo(@model, "add", @render)
-    @setCardVisibility()
-
-  setCardVisibility: ->
-    @cards(1).set({ hidden: true }) if @type() == 'dealer'
-
-  type: ->
-    @options.type
 
   cards: (index) ->
     @model.cards(index)
 
   render: ->
-    @$el.find('.card').remove()
+    @$el.html _.template(@template, {})
     for card in @cards()
-      new CardView(model: card, el: @el).render()
+      new CardView(model: card, el: @$el.find(' .cards')).render()
     return this
+
+
+PlayerHandView = HandView.extend
+  el: "#player"
+
+  template: """
+    <div class="hand player">
+      <div class=cards></div>
+      <div class=clear></div>
+      <a class=button id=hit>Hit</a>
+      <a class=button id=stand>Stand</a>
+    </div>
+  """
+
+  events:
+    "click #hit": 'hit'
+    "click #stand": 'stand'
+
+  hit: (event) ->
+    event.preventDefault()
+    @model.hit(Blackjack.deck.deal(1))
+
+  stand: (event) ->
+    event.preventDefault()
+    console.log 'Stand!'
+
+
+DealerHandView = HandView.extend
+  el: "#dealer"
+
+  template: """
+    <div class="hand dealer">
+      <div class=cards></div>
+      <div class=clear></div>
+    </div>
+  """
+
+
+Blackjack =
+  deck: new Deck
+
+  play: ->
+    dealerHand = new Hand(Blackjack.deck.deal(2))
+    new DealerHandView(model: dealerHand).render()
+
+    playerHand = new Hand(Blackjack.deck.deal(2))
+    new PlayerHandView(model: playerHand).render()
 
 
 # -----------------------------------------------------------------------------
 # Go!
 # -----------------------------------------------------------------------------
-jQuery ->
-
-  window.deck = new Deck
-  window.playerHand = new Hand(window.deck.deal(2))
-  window.dealerHand = new Hand(window.deck.deal(2))
-
-  window.playerHandView = new HandView
-    model: window.playerHand
-    type: 'player'
-
-  window.dealerHandView = new HandView
-    model: window.dealerHand
-    type: 'dealer'
-
-  window.playerHandView.render()
-  window.dealerHandView.render()
-
-  $('#hit').click (event) ->
-    event.preventDefault()
-    window.playerHand.hit(deck.deal(1))
+jQuery -> Blackjack.play()
