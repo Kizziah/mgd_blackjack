@@ -1,7 +1,6 @@
-# ♣ &clubs;
-# ♦ &diams;
-# ♥ &hearts;
-# ♠ &spades;
+# TODO
+# * Click event should not be in doc ready block
+# * Is this a hack or good? `@$el.find('.card').remove()`
 
 # -----------------------------------------------------------------------------
 # Models
@@ -10,17 +9,19 @@ Card = Backbone.Model.extend
   defaults:
     suit: null
     name: null
+    hidden: false
 
-  formattedSuit: ->
-    "&#{@get('suit')};"
+  entityForSuit: ->
+    "&#{@get('suit')};" # e.g. "&hearts;"
 
   forTemplate: ->
     template = @toJSON()
-    template.formattedSuit = @formattedSuit()
+    template.entityForSuit = @entityForSuit()
+    template.visiblityClass = @visiblityClass()
     template
 
-  show: ->
-    "#{@get('name')}#{@get('suit')}"
+  visiblityClass: ->
+    if @get('hidden') then 'flipped' else ''
 
   value: ->
     switch @get('name')
@@ -59,30 +60,41 @@ Hand = Backbone.Collection.extend
 # -----------------------------------------------------------------------------
 CardView = Backbone.View.extend
   template: """
-    <div class="card <%= suit %>">
+    <div class="card <%= suit %> <%= visiblityClass %>">
       <div class=top_left>
         <div class=name><%= name %></div>
-        <div class=suit><%= formattedSuit %></div>
+        <div class=suit><%= entityForSuit %></div>
       </div>
       <div class=bottom_right>
         <div class=name><%= name %></div>
-        <div class=suit><%= formattedSuit %></div>
+        <div class=suit><%= entityForSuit %></div>
       </div>
     </div>
   """
 
   render: ->
-    @$el.find('.cards').append _.template(@template, @model.forTemplate())
+    @$el.append _.template(@template, @model.forTemplate())
     return this
 
 HandView = Backbone.View.extend
 
   initialize: ->
-    @listenTo(@model, "add", @render);
+    @setElement("##{@type()}_hand .cards") # e.g. "#player_hand .cards"
+    @listenTo(@model, "add", @render)
+    @setCardVisibility()
+
+  setCardVisibility: ->
+    @cards(1).set({ hidden: true }) if @type() == 'dealer'
+
+  type: ->
+    @options.type
+
+  cards: (index) ->
+    @model.cards(index)
 
   render: ->
     @$el.find('.card').remove()
-    for card in @model.cards()
+    for card in @cards()
       new CardView(model: card, el: @el).render()
     return this
 
@@ -98,11 +110,11 @@ jQuery ->
 
   window.playerHandView = new HandView
     model: window.playerHand
-    el: '#player_hand'
+    type: 'player'
 
   window.dealerHandView = new HandView
     model: window.dealerHand
-    el: '#dealer_hand'
+    type: 'dealer'
 
   window.playerHandView.render()
   window.dealerHandView.render()
