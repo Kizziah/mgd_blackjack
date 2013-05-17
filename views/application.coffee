@@ -1,22 +1,15 @@
 # TODO
-# * Is this a hack or good? `@$el.find('.card').remove()`
 # * Hand view should be roped into the JS in order to support more than one player hand
 
 # -----------------------------------------------------------------------------
 # Models
 # -----------------------------------------------------------------------------
-Card = Backbone.Model.extend
-  defaults:
-    suit: null
-    name: null
+Blackjack = {}
+
+Blackjack.Card = Backbone.Model.extend
 
   entityForSuit: ->
     "&#{@get('suit')};" # e.g. "&hearts;"
-
-  forTemplate: ->
-    template = @toJSON()
-    template.entityForSuit = @entityForSuit()
-    template
 
   isAce: ->
     @get('name') == 'A'
@@ -27,8 +20,8 @@ Card = Backbone.Model.extend
       when 'J', 'Q', 'K' then 10
       else parseInt(@get('name'))
 
-Deck = Backbone.Collection.extend
-  model: Card
+Blackjack.Deck = Backbone.Collection.extend
+  model: Blackjack.Card
 
   initialize: ->
     suits = ['hearts', 'clubs', 'spades', 'diams']
@@ -43,15 +36,14 @@ Deck = Backbone.Collection.extend
     @remove(cards)
     cards
 
-Hand = Backbone.Collection.extend
-  model: Card
+Blackjack.Hand = Backbone.Collection.extend
+  model: Blackjack.Card
 
   cards: (index) ->
     if index then @models[index-1] else @models
 
   hit: (card) ->
     @add(card)
-    console.log @value()
 
   aces: ->
     @cards().filter (card) -> card.isAce()
@@ -67,10 +59,11 @@ Hand = Backbone.Collection.extend
   blackjack: ->
     @value() == 21
 
+
 # -----------------------------------------------------------------------------
 # Views
 # -----------------------------------------------------------------------------
-CardView = Backbone.View.extend
+Blackjack.CardView = Backbone.View.extend
   template: """
     <div class="card <%= suit %>">
       <div class=top_left>
@@ -84,12 +77,16 @@ CardView = Backbone.View.extend
     </div>
   """
 
+  templateData: ->
+    template = @model.toJSON()
+    template.entityForSuit = @model.entityForSuit()
+    template
+
   render: ->
-    @$el.append _.template(@template, @model.forTemplate())
+    @$el.append _.template(@template, @templateData())
     return this
 
-
-HandView = Backbone.View.extend
+Blackjack.HandView = Backbone.View.extend
 
   initialize: ->
     @listenTo(@model, "add", @render)
@@ -97,18 +94,31 @@ HandView = Backbone.View.extend
   cards: (index) ->
     @model.cards(index)
 
+  showBust: ->
+    $('.notification.bust').show()
+
+  showBlackjack: ->
+    $('.notification.blackjack').show()
+
   render: ->
     @$el.html _.template(@template, {})
+
+    @showBlackjack() if @model.blackjack()
+    @showBust() if @model.bust()
+
     for card in @cards()
-      new CardView(model: card, el: @$el.find(' .cards')).render()
+      new Blackjack.CardView(model: card, el: @$el.find(' .cards')).render()
     return this
 
-
-PlayerHandView = HandView.extend
+Blackjack.PlayerHandView = Blackjack.HandView.extend
   el: "#player"
 
   template: """
     <div class="hand player">
+
+      <div class="bust notification">Oh no! You busted.</div>
+      <div class="blackjack notification">Congrats! You got blackjack.</div>
+
       <div class=cards></div>
       <div class=clear></div>
       <a class=button id=hit>Hit</a>
@@ -122,14 +132,13 @@ PlayerHandView = HandView.extend
 
   hit: (event) ->
     event.preventDefault()
-    @model.hit(Blackjack.deck.deal(1))
+    @model.hit(Blackjack.Game.deck.deal(1))
 
   stand: (event) ->
     event.preventDefault()
     console.log 'Stand!'
 
-
-DealerHandView = HandView.extend
+Blackjack.DealerHandView = Blackjack.HandView.extend
   el: "#dealer"
 
   template: """
@@ -139,19 +148,19 @@ DealerHandView = HandView.extend
     </div>
   """
 
-
-Blackjack =
-  deck: new Deck
+Blackjack.Game =
+  deck: new Blackjack.Deck
 
   play: ->
-    dealerHand = new Hand(Blackjack.deck.deal(2))
-    new DealerHandView(model: dealerHand).render()
+    dealerHand = new Blackjack.Hand(Blackjack.Game.deck.deal(2))
+    new Blackjack.DealerHandView(model: dealerHand).render()
 
-    playerHand = new Hand(Blackjack.deck.deal(2))
-    new PlayerHandView(model: playerHand).render()
+    playerHand = new Blackjack.Hand(Blackjack.Game.deck.deal(2))
+    new Blackjack.PlayerHandView(model: playerHand).render()
 
 
 # -----------------------------------------------------------------------------
 # Go!
 # -----------------------------------------------------------------------------
-jQuery -> Blackjack.play()
+jQuery ->
+  Blackjack.Game.play()
