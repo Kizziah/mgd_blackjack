@@ -1,6 +1,7 @@
 %html
   %head
     %link{ rel: :stylesheet, href: "/application.css", type: 'text/css' }
+    %link{ href: 'http://fonts.googleapis.com/css?family=Lobster', rel: :stylesheet, type: 'text/css' }
     %script{ src: "/jquery.js", type: 'text/javascript', charset: 'utf-8' }
     %script{ src: "/underscore.js", type: 'text/javascript', charset: 'utf-8' }
     %script{ src: "/json2.js", type: 'text/javascript', charset: 'utf-8' }
@@ -10,9 +11,12 @@
     %title Blackjack
 
   %body
+    %header
+      %span.icon
+      %h1 Palms Casino Blackjack
+      .clear
     #page_wrap
-      %h1 Blackjack
-
+      #notification
       #blackjack_wrapper
 
         %h3 Dealer Cards
