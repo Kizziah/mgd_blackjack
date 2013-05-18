@@ -13,3 +13,5 @@ A simple blackjack application built in [backbone.js](http://backbonejs.org).
 * Better styles for back of cards
 * Allow player to place a wager (currently defaulting to $10)
 * Better button styles?
+* We probably shouldn't need wrapper divs in index.html? Can we work that into the BB templates?
+* Session should be a collection of games!

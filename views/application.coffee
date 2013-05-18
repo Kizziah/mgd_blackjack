@@ -1,9 +1,3 @@
-# TODO
-# * We probably shouldn't need wrapper divs in index.html?
-# * Session should be a collection of games!
-# * Do we still need the type attribute on hands?
-
-
 Blackjack = {}
 
 # -----------------------------------------------------------------------------
