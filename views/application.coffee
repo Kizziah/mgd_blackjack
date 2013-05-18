@@ -49,7 +49,7 @@ Blackjack.Hand = Backbone.Collection.extend
     if index then @models[index-1] else @models
 
   hit: ->
-    @add(Blackjack.Game.deck.deal(1))
+    @add(Blackjack.Session.deck.deal(1))
 
   aces: ->
     @cards().filter (card) -> card.isAce()
@@ -188,14 +188,19 @@ Blackjack.DealerHandView = Blackjack.HandView.extend
     @model.hit() while @model.value() < 16
     @triggerEvents()
 
-Blackjack.Game =
+# Should be initializable since we want to start a new game
+# Needs to provide global access to the deck
+# Needs to be able to compute the winner
+# Needs to store a wager some how
+
+Blackjack.Session =
   deck: new Blackjack.Deck
 
-  play: ->
-    dealerHand = new Blackjack.Hand(Blackjack.Game.deck.deal(2))
+  start: ->
+    dealerHand = new Blackjack.Hand(Blackjack.Session.deck.deal(2))
     new Blackjack.DealerHandView(model: dealerHand).render()
 
-    playerHand = new Blackjack.Hand(Blackjack.Game.deck.deal(2))
+    playerHand = new Blackjack.Hand(Blackjack.Session.deck.deal(2))
     new Blackjack.PlayerHandView(model: playerHand).render()
 
     new Blackjack.NotificationView
@@ -204,6 +209,6 @@ Blackjack.Game =
 # Go!
 # -----------------------------------------------------------------------------
 jQuery ->
-  Blackjack.Game.play()
+  Blackjack.Session.start()
   window.bj = Blackjack
 
