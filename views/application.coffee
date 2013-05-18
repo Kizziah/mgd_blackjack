@@ -239,7 +239,6 @@ Blackjack.Session =
 
   start: ->
     Blackjack.Session.dealGame()
-    # Blackjack.Session.currentGame.notificationView.render( message: 'fuck you', type: 'win')
 
 jQuery ->
   Blackjack.Session.start()
