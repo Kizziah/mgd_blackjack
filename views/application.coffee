@@ -49,7 +49,7 @@ Blackjack.Hand = Backbone.Collection.extend
     if index then @models[index-1] else @models
 
   hit: ->
-    @add(Blackjack.Session.deck.deal(1))
+    @add(Blackjack.Session.currentGame.deck.deal(1))
 
   aces: ->
     @cards().filter (card) -> card.isAce()
@@ -67,6 +67,17 @@ Blackjack.Hand = Backbone.Collection.extend
   blackjack: ->
     @value() == 21
 
+Blackjack.Game = Backbone.Model.extend
+  initialize: ->
+    @wager = 10
+    @deck = new Blackjack.Deck
+    @dealerHand = new Blackjack.Hand(@deck.deal(2))
+    @dealerHandView = new Blackjack.DealerHandView(model: @dealerHand)
+    @playerHand = new Blackjack.Hand(@deck.deal(2))
+    @playerHandView = new Blackjack.PlayerHandView(model: @playerHand)
+
+    @dealerHandView.render()
+    @playerHandView.render()
 
 # -----------------------------------------------------------------------------
 # Views
@@ -188,26 +199,19 @@ Blackjack.DealerHandView = Blackjack.HandView.extend
     @model.hit() while @model.value() < 16
     @triggerEvents()
 
-# Should be initializable since we want to start a new game
-# Needs to provide global access to the deck
-# Needs to be able to compute the winner
-# Needs to store a wager some how
-
+# -----------------------------------------------------------------------------
+# Initialization
+# -----------------------------------------------------------------------------
 Blackjack.Session =
-  deck: new Blackjack.Deck
+  balance: 1000
+
+  dealGame: ->
+    Blackjack.Session.currentGame = new Blackjack.Game
 
   start: ->
-    dealerHand = new Blackjack.Hand(Blackjack.Session.deck.deal(2))
-    new Blackjack.DealerHandView(model: dealerHand).render()
-
-    playerHand = new Blackjack.Hand(Blackjack.Session.deck.deal(2))
-    new Blackjack.PlayerHandView(model: playerHand).render()
-
     new Blackjack.NotificationView
+    Blackjack.Session.dealGame()
 
-# -----------------------------------------------------------------------------
-# Go!
-# -----------------------------------------------------------------------------
 jQuery ->
   Blackjack.Session.start()
   window.bj = Blackjack
