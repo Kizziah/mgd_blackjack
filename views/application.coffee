@@ -1,5 +1,8 @@
 # TODO
 # * We probably shouldn't need wrapper divs in index.html?
+# * Session should be a collection of games!
+# * Do we still need the type attribute on hands?
+
 
 Blackjack = {}
 
@@ -69,15 +72,45 @@ Blackjack.Hand = Backbone.Collection.extend
 
 Blackjack.Game = Backbone.Model.extend
   initialize: ->
+    Blackjack.Events.on "bj:gameOver", @finish, @
+
     @wager = 10
     @deck = new Blackjack.Deck
     @dealerHand = new Blackjack.Hand(@deck.deal(2))
     @dealerHandView = new Blackjack.DealerHandView(model: @dealerHand)
     @playerHand = new Blackjack.Hand(@deck.deal(2))
     @playerHandView = new Blackjack.PlayerHandView(model: @playerHand)
+    @notificationView = new Blackjack.NotificationView
 
     @dealerHandView.render()
     @playerHandView.render()
+
+  winnings: ->
+    switch @terminalEvent()
+      when 'bj:player:blackjack' then @wager * 2
+      when 'bj:dealer:bust', 'bj:player:wins' then @wager
+      when 'bj:player:bust', 'bj:dealer:blackjack', 'bj:dealer:wins' then @wager * -1
+
+  terminalEvent: ->
+    switch
+      when @playerHand.blackjack() then 'bj:player:blackjack'
+      when @playerHand.bust() then 'bj:player:bust'
+      when @dealerHand.blackjack() then 'bj:dealer:blackjack'
+      when @dealerHand.bust() then 'bj:dealer:bust'
+      when @dealerHand.value() < @playerHand.value() then 'bj:player:wins'
+      else 'bj:dealer:wins' # dealer wins ties
+
+  restart: ->
+    view = Blackjack.Session.currentGame.notificationView
+    view.$el.slideUp('slow')
+    view.remove()
+    Blackjack.Session.dealGame()
+
+  finish: ->
+    Blackjack.Events.trigger(@terminalEvent())
+    Blackjack.Session.balance += @winnings()
+    setTimeout @restart, 3500
+
 
 # -----------------------------------------------------------------------------
 # Views
@@ -88,6 +121,8 @@ Blackjack.NotificationView = Backbone.View.extend
     Blackjack.Events.on "bj:dealer:bust", @callbacks.dealer.bust, @
     Blackjack.Events.on "bj:dealer:blackjack", @callbacks.player.blackjack, @
     Blackjack.Events.on "bj:player:blackjack", @callbacks.player.blackjack, @
+    Blackjack.Events.on "bj:player:wins", @callbacks.player.wins, @
+    Blackjack.Events.on "bj:dealer:wins", @callbacks.dealer.wins, @
 
   template: "<div class='message <%= type %>'><%= message %></div>"
 
@@ -95,11 +130,13 @@ Blackjack.NotificationView = Backbone.View.extend
 
   callbacks:
     dealer:
-      bust: -> @render(message: "You win! Dealer busted!", type: "win")
-      blackjack: -> @render(message: "You lost! Dealer got blackjack!", type: "lose")
+      wins: -> @render(message: "Too bad! You lose", type: "lose")
+      bust: -> @render(message: "You win! Dealer busted.", type: "win")
+      blackjack: -> @render(message: "You lost! Dealer got blackjack.", type: "lose")
     player:
-      bust: -> @render(message: "You lose! Looks like you busted!", type: "lose")
-      blackjack: -> @render(message: "You win! Looks like you got blackjack!", type: "win")
+      wins: -> @render(message: "Hooray! You win.", type: "win")
+      bust: -> @render(message: "You lose! You busted.", type: "lose")
+      blackjack: -> @render(message: "You win! Black-motherfuckin-jack!", type: "win")
 
   render: (data) ->
     @$el.html(_.template(@template, data)).hide().slideDown()
@@ -132,10 +169,6 @@ Blackjack.HandView = Backbone.View.extend
   cards: (index) ->
     @model.cards(index)
 
-  triggerEvents: ->
-    Blackjack.Events.trigger("bj:#{@type}:bust") if @model.bust()
-    Blackjack.Events.trigger("bj:#{@type}:blackjack") if @model.blackjack()
-
   templateData: ->
     template = @model.toJSON()
     template.value = @model.value()
@@ -156,15 +189,14 @@ Blackjack.PlayerHandView = Blackjack.HandView.extend
   template: """
     <div class="hand player">
       <div class=value>Hand Total: <%= value %></div>
-
       <div class=cards></div>
-      <div class=clear></div>
-      <a class=button id=hit>Hit</a>
-      <a class=button id=stand>Stand</a>
+
+      <div class=buttons>
+        <a class=button id=hit>Hit</a>
+        <a class=button id=stand>Stand</a>
+      </div>
     </div>
   """
-
-  type: "player"
 
   events:
     "click #hit": 'hit'
@@ -173,7 +205,7 @@ Blackjack.PlayerHandView = Blackjack.HandView.extend
   hit: (event) ->
     event.preventDefault()
     @model.hit()
-    @triggerEvents()
+    Blackjack.Events.trigger("bj:gameOver") if @model.bust() || @model.blackjack()
 
   stand: (event) ->
     event.preventDefault()
@@ -189,15 +221,12 @@ Blackjack.DealerHandView = Blackjack.HandView.extend
   template: """
     <div class="hand dealer">
       <div class=cards></div>
-      <div class=clear></div>
     </div>
   """
 
-  type: "dealer"
-
   play: ->
     @model.hit() while @model.value() < 16
-    @triggerEvents()
+    Blackjack.Events.trigger("bj:gameOver")
 
 # -----------------------------------------------------------------------------
 # Initialization
@@ -209,8 +238,8 @@ Blackjack.Session =
     Blackjack.Session.currentGame = new Blackjack.Game
 
   start: ->
-    new Blackjack.NotificationView
     Blackjack.Session.dealGame()
+    # Blackjack.Session.currentGame.notificationView.render( message: 'fuck you', type: 'win')
 
 jQuery ->
   Blackjack.Session.start()
