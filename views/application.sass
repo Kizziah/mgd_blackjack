@@ -52,6 +52,12 @@ header
   margin: 0 auto
   position: relative
 
+  #previous_games
+    width: 300px
+    float: right
+  #current_game
+    width: 600px
+
 // ----------------------------------------------------------------------------
 // Notifications
 // ----------------------------------------------------------------------------
@@ -89,9 +95,6 @@ header
         background: #b3b3b3
       &:active
 
-.hand.dealer .card:first-child
-  @extend .flipped
-
 // ----------------------------------------------------------------------------
 // Card
 // ----------------------------------------------------------------------------
@@ -112,7 +115,7 @@ header
     -webkit-transform: rotate(-20deg)
   &.hearts, &.diams
     color: red
-  &.flipped
+  &.hidden
     background: radial-gradient(circle at 0% 50%, rgba(96, 16, 48, 0) 9px, #613 10px, rgba(96, 16, 48, 0) 11px) 0px 10px, radial-gradient(at 100% 100%, rgba(96, 16, 48, 0) 9px, #613 10px, rgba(96, 16, 48, 0) 11px), #B4C9FA //#7FA3F5 //#4548E6 //#E64545
     background-size: 20px 20px
     .top_left, .bottom_right

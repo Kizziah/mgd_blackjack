@@ -10,9 +10,10 @@ Blackjack.Events = _.extend({}, Backbone.Events)
 # Models
 # -----------------------------------------------------------------------------
 Blackjack.Card = Backbone.Model.extend
+  defaults: { visible: true }
 
   entityForSuit: ->
-    "&#{@get('suit')};" # e.g. "&hearts;"
+    "&#{@get('suit')};"
 
   isAce: ->
     @get('name') == 'A'
@@ -94,16 +95,22 @@ Blackjack.Game = Backbone.Model.extend
       when @dealerHand.value() < @playerHand.value() then 'bj:player:wins'
       else 'bj:dealer:wins' # dealer wins ties
 
+  showDealerHand: ->
+    @dealerHandView.cards(1).set('visible', true)
+    @dealerHandView.render()
+
+  adjustPlayerBalance: ->
+    Blackjack.Session.balance += @winnings()
+
   restart: ->
-    view = Blackjack.Session.currentGame.notificationView
-    view.$el.slideUp('slow')
-    view.remove()
-    Blackjack.Session.dealGame()
+    # @notificationView.$el.slideUp('slow')
+    # @notificationView.remove()
+    # Blackjack.Session.dealGame()
 
   finish: ->
     Blackjack.Events.trigger(@terminalEvent())
-    Blackjack.Session.balance += @winnings()
-    setTimeout @restart, 3500
+    @showDealerHand()
+    @adjustPlayerBalance()
 
 
 # -----------------------------------------------------------------------------
@@ -113,7 +120,7 @@ Blackjack.NotificationView = Backbone.View.extend
   initialize: ->
     Blackjack.Events.on "bj:player:bust", @callbacks.player.bust, @
     Blackjack.Events.on "bj:dealer:bust", @callbacks.dealer.bust, @
-    Blackjack.Events.on "bj:dealer:blackjack", @callbacks.player.blackjack, @
+    Blackjack.Events.on "bj:dealer:blackjack", @callbacks.dealer.blackjack, @
     Blackjack.Events.on "bj:player:blackjack", @callbacks.player.blackjack, @
     Blackjack.Events.on "bj:player:wins", @callbacks.player.wins, @
     Blackjack.Events.on "bj:dealer:wins", @callbacks.dealer.wins, @
@@ -138,7 +145,7 @@ Blackjack.NotificationView = Backbone.View.extend
 
 Blackjack.CardView = Backbone.View.extend
   template: """
-    <div class="card <%= suit %>">
+    <div class="card <%= suit %> <%= visibility %>">
       <div class=top_left>
         <div class=name><%= name %></div>
         <div class=suit><%= entityForSuit %></div>
@@ -153,6 +160,7 @@ Blackjack.CardView = Backbone.View.extend
   templateData: ->
     template = @model.toJSON()
     template.entityForSuit = @model.entityForSuit()
+    template.visibility = if @model.get('visible') then 'visible' else 'hidden'
     template
 
   render: ->
@@ -209,6 +217,7 @@ Blackjack.DealerHandView = Blackjack.HandView.extend
   initialize: ->
     @listenTo(@model, "add", @render)
     Blackjack.Events.on "bj:player:stand", @play, @
+    @cards(1).set('visible', false)
 
   el: "#dealer"
 
