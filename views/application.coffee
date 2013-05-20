@@ -127,9 +127,7 @@ Blackjack.NotificationView = Backbone.View.extend
     Blackjack.Events.on "bj:player:wins", @callbacks.player.wins, @
     Blackjack.Events.on "bj:dealer:wins", @callbacks.dealer.wins, @
 
-  template: "<div class='message <%= type %>'><%= message %></div>"
-
-  el: "#notification"
+  template: "<div id=notification class='<%= type %>'><%= message %></div>"
 
   callbacks:
     dealer:
@@ -142,7 +140,8 @@ Blackjack.NotificationView = Backbone.View.extend
       blackjack: -> @render(message: "You win! Black-motherfuckin-jack!", type: "win")
 
   render: (data) ->
-    @$el.html(_.template(@template, data)).hide().slideDown()
+    $('header').after(_.template(@template, data)).hide().slideDown()
+    # @$el.html(_.template(@template, data)).hide().slideDown()
     return this
 
 Blackjack.CardView = Backbone.View.extend
