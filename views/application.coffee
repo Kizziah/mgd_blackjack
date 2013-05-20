@@ -141,7 +141,6 @@ Blackjack.NotificationView = Backbone.View.extend
 
   render: (data) ->
     $('header').after(_.template(@template, data)).hide().slideDown()
-    # @$el.html(_.template(@template, data)).hide().slideDown()
     return this
 
 Blackjack.CardView = Backbone.View.extend
