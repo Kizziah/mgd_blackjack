@@ -3,7 +3,6 @@
 A simple blackjack application built in [backbone.js](http://backbonejs.org).
 
 ## TODO
-* Need to check for player blackjacks immediately after dealing
 * Show current balance somewhere
 * Better styles for the players current hand total
 * Better notification which include hand values, e.g. "28. You bust!"

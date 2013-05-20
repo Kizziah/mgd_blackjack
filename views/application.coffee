@@ -80,6 +80,8 @@ Blackjack.Game = Backbone.Model.extend
     @dealerHandView.render()
     @playerHandView.render()
 
+    Blackjack.Events.trigger("bj:gameOver") if @playerHand.blackjack()
+
   winnings: ->
     switch @terminalEvent()
       when 'bj:player:blackjack' then @wager * 2
