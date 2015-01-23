@@ -67,6 +67,7 @@ Blackjack.Hand = Backbone.Collection.extend
 
 Blackjack.Game = Backbone.Model.extend
   initialize: ->
+    console.log 'Game'
     Blackjack.Events.on "bj:gameOver", @finish, @
 
     @wager = 10
@@ -102,6 +103,7 @@ Blackjack.Game = Backbone.Model.extend
     @dealerHandView.render()
 
   adjustPlayerBalance: ->
+    console.log ('winnings')
     Blackjack.Session.balance += @winnings()
 
   restart: ->
@@ -113,7 +115,11 @@ Blackjack.Game = Backbone.Model.extend
     Blackjack.Events.trigger(@terminalEvent())
     @showDealerHand()
     @adjustPlayerBalance()
-
+    debugger
+    # Blackjack.Session.redealGame()
+    # @notificationView.$el.slideUp('slow')
+    # @notificationView.remove()
+    # Blackjack.Session.dealGame()        
 
 # -----------------------------------------------------------------------------
 # Views
@@ -239,7 +245,10 @@ Blackjack.Session =
 
   dealGame: ->
     Blackjack.Session.currentGame = new Blackjack.Game
-
+  
+  redealGame: ->
+    # Blackjack.Session.currentGame = new Blackjack.Game
+  
   start: ->
     Blackjack.Session.dealGame()
 

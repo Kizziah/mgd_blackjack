@@ -28,7 +28,6 @@ PLATFORMS
 DEPENDENCIES
   coffee-script
   haml
-  rack
   sass
   shotgun
   sinatra
